@@ -1,1 +1,185 @@
+CODE
+Execution of the dataset: 
+import numpy as np 
+import pandas as pd 
+import matplotlib 
+#for visualizations 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+ 
+from sklearn.metrics import mean_absolute_error, mean_squared_error, 
+mean_absolute_percentage_error 
+import math 
+df = pd.read_csv('/kaggle/input/covid-data/India_covid_data.csv') 
+df 
 
+ 
+df = df.iloc[:680] 
+df 
+ 
+df['date'] = pd.to_datetime(df['date'], format='%d-%m-%Y') 
+df 
+ 
+df.index = df['date'] 
+df.drop('date', axis=1, inplace=True) 
+df = df[['new_cases']] 
+df 
+ 
+df.plot(figsize=(15,6)) 
+ 
+from sklearn.preprocessing import MinMaxScaler 
+scaler = MinMaxScaler() 
+scaled_df = scaler.fit_transform(df) 
+from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator  
+ 
+length = 50 
+generator = TimeseriesGenerator(scaled_df, scaled_df, length=length, batch_size=1) 
+from tensorflow.keras.models import Sequential 
+from tensorflow.keras.layers import Dense, Dropout, LSTM 
+model = Sequential() 
+# we want units of neurons (100 in the first LSTM layer) to be in the order of length of 
+batches. length of neurons here is 50.  
+# so we use 10 units in the first LSTM layer and increase a bit in the next layer followed by 
+100 again.  
+model.add(LSTM(10, activation='relu', input_shape=(length, 1), return_sequences=True)) # 
+length = 50. number of features is 1 ('cases' column) 
+model.add(Dropout(0.4)) 
+ 
+model.add(LSTM(20, activation='relu', return_sequences=True)) # length = 50. number of 
+features is 1 ('cases' column) 
+model.add(Dropout(0.2)) 
+ 
+model.add(LSTM(10, activation='relu'))  
+model.add(Dropout(0.2)) 
+ 
+model.add(Dense(1)) 
+model.compile(optimizer='adam', loss='mse') 
+ 
+model.summary();
+df4 = pd.read_csv('/kaggle/input/latest-data/India Latest case.csv', index_col = 'date') 
+df4.index = pd.to_datetime(df4.index, format='%d-%m-%Y') 
+df4 
+ 
+Latest_cases = pd.concat([df, df4], axis=0) 
+Latest_cases 
+25 
+ 
+ 
+ax = df2.plot(figsize=(22,12), color='#7B7885') # actual data till 08-02-2022 
+forecast_df.plot(ax=ax, color='red'); # predicted data from 11-01-2022 till 19-02-2022 
+ 
+ax = df3.plot(figsize=(22,12), color='black') # actual data till 30-03-2022 
+forecast_df.plot(ax=ax, color='red'); # predicted data from 30-03-2022 till 08-05-2022
+
+
+
+Best COVID-19 Forecasting in US, UK and Chile 
+ 
+import pandas as pd 
+import matplotlib.pyplot as plt 
+import math 
+plt.style.use('fivethirtyeight') 
+import numpy as np 
+data=pd.read_csv('/kaggle/input/datasettt/owid-covid-data.csv') 
+data.head() 
+data.info() 
+data[data['location']=='Chile'] 
+data2 = data.copy() 
+data2.date = pd.to_datetime(data2['date']) 
+ 
+ 
+data2 = data2.groupby('date').sum() 
+data2['7 days MA new cases'] = 0 
+data2['7 days MA new cases'] = data2['new_cases'].rolling(7).mean() #Moving average of 
+new cases with window=10 
+data2['7 days MA new deaths'] = 0 
+data2['7 days MA new deaths'] = data2['new_deaths'].rolling(7).mean()  #Moving average of 
+new deaths with window=10 
+data2[['new_cases', '7 days MA new cases']].plot(figsize = (11, 5), alpha = 0.5) 
+plt.title('Timeline new cases in world') 
+plt.xlabel('Date') 
+plt.ylabel('New cases') 
+ 
+ 
+data2[['new_deaths', '7 days MA new deaths']].plot(figsize = (11, 5), alpha = 0.5) 
+plt.title('Timeline new deaths in world') 
+plt.xlabel('Date') 
+plt.ylabel('New deaths') 
+
+ 
+ 
+def create_and_plot_df(df, country): 
+    #Selecting the 7 key columns for country in dataset 
+    df=df[df['location']==country].copy() 
+    df=df[['date','total_cases','new_cases', 
+         'total_deaths','new_deaths', 
+         'people_vaccinated_per_hundred', 'people_fully_vaccinated_per_hundred', 
+         'new_deaths_per_million', 'new_cases_per_million']].copy() 
+ 
+    #Convert to datetime 
+    df.date = pd.to_datetime(df['date']) 
+ 
+    #Fixing the mistakes in chilean data. 
+    if country=='Chile': 
+        df.loc[df['date']=='2021-10-07','total_deaths'] = 37533 
+        df.loc[df['date']=='2021-10-07','new_deaths'] = 21 
+        df.loc[df['date']=='2021-10-08','new_deaths'] = 9 
+
+ 
+        df.loc[df['date']=='2021-10-07','new_deaths_per_million'] = 1.092 
+        df.loc[df['date']=='2021-10-08','new_deaths_per_million'] = 0.468 
+    else: 
+        pass 
+   
+    #Fixing the mistakes in uk data. 
+    if country=='United Kingdom': 
+        df.loc[df['date']=='2022-01-31','new_cases'] = 92368 
+        df.loc[df['date']=='2022-02-01','new_deaths'] = 219 
+        df.loc[df['date']=='2022-01-31','new_cases_per_million'] = 1354 
+        df.loc[df['date']=='2022-02-01','new_deaths_per_million'] = 3.211 
+        df.loc[df['date']=='2021-04-09','new_cases'] = 3150 
+        df.loc[df['date']=='2021-04-09','new_cases_per_million'] = 46 
+        df.loc[df['date']=='2021-05-18','new_cases'] = 2412 
+        df.loc[df['date']=='2021-05-18','new_cases_per_million'] = 35 
+    else: 
+        pass 
+   
+    #Set the date as index and compute moving average with window=7 for new_cases and 
+new_deaths 
+    df.set_index('date', inplace=True) 
+    df['7 days MA new cases'] = 0 
+    df['7 days MA new cases'] = df['new_cases'].rolling(7).mean() 
+    df['7 days MA new deaths'] = 0 
+    df['7 days MA new deaths'] = df['new_deaths'].rolling(7).mean() 
+ 
+ 
+    df['7 days MA new cases per million'] = 0 
+    df['7 days MA new cases per million'] = df['new_cases_per_million'].rolling(7).mean() 
+    df['7 days MA new deaths per million'] = 0 
+    df['7 days MA new deaths per million'] = df['new_deaths_per_million'].rolling(7).mean() 
+   
+    #Plot new cases, new deaths and people vaccinated  
+    df[['new_cases', '7 days MA new cases']].plot(figsize = (15, 5), alpha = 0.5) 
+    plt.title(f'Timeline new cases in {country}') 
+ 
+    df[['new_deaths', '7 days MA new deaths']].plot(figsize = (15, 5), alpha = 0.5) 
+    if country=='Chile': 
+        plt.ylim([0,400]) 
+    else: 
+        pass 
+    plt.title(f'Timeline new deaths in {country}') 
+ 
+    df[['people_vaccinated_per_hundred', 'people_fully_vaccinated_per_hundred']].plot(figsize 
+= (15, 5), alpha = 0.5) 
+    plt.ylim([0,100]) 
+    plt.fill_between(df.index, df.people_vaccinated_per_hundred) 
+    plt.fill_between(df.index, df.people_fully_vaccinated_per_hundred) 
+    plt.title(f'Timeline percentage of people vaccinated in {country}') 
+   
+    #Return the dataframe processed 
+    return df 
+
+df_uk=create_and_plot_df(data, 'United Kingdom') 
+
+df_us=create_and_plot_df(data, 'United States') 
+df_chile=create_and_plot_df(data, 'Chile')
